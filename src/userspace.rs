@@ -76,6 +76,11 @@ pub fn load_elf(root: &mut PageTable) -> u64 {
             root.map_page(virt, VALID | READ | WRITE);
         }
 
+        if phdr.mem_size() % 0x1000 > 0 {
+                // unaligned size, map the last page properly
+                root.map_page(base + phdr.mem_size(), VALID | READ | WRITE);
+        }
+
         unsafe { copy_to_user(base, data) }
 
         let mut prot = 0;
@@ -92,6 +97,11 @@ pub fn load_elf(root: &mut PageTable) -> u64 {
         // Remap with the correct page flags
         for virt in (base..base + phdr.mem_size()).step_by(0x1000) {
             root.map_page(virt, VALID | USER | prot);
+        }
+
+        if phdr.mem_size() % 0x1000 > 0 {
+                // unaligned size, remap the last page properly
+                root.map_page(base + phdr.mem_size(), VALID | USER | prot);
         }
     }
 
